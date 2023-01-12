@@ -15,6 +15,68 @@ import (
 	"unsafe"
 )
 
+func TestPop(t *testing.T) {
+	ldis, err := Open("./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer func() {
+		cancel()
+		ldis.Close()
+	}()
+
+	queue, err := NewSimpleQueue("test-1", WithOwnLedis(ldis), WithContext(ctx))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 100; i++ {
+		bs, err := queue.Pop()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Log(string(bs))
+		_len, err := queue.Len()
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("len", _len)
+	}
+
+	t.Log("OK")
+}
+
+func TestPush(t *testing.T) {
+	ldis, err := Open("./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer func() {
+		cancel()
+		ldis.Close()
+	}()
+
+	queue, err := NewSimpleQueue("test-1", WithOwnLedis(ldis), WithContext(ctx))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 1000; i++ {
+		if err := queue.Push([]byte(strconv.Itoa(i + 1))); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Log("OK")
+}
+
 func TestPopCh(t *testing.T) {
 	ldis, err := Open("./tmp")
 	if err != nil {
