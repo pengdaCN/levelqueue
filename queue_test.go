@@ -15,6 +15,36 @@ import (
 	"unsafe"
 )
 
+func TestClear(t *testing.T) {
+	ldis, err := Open("./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer func() {
+		cancel()
+		ldis.Close()
+	}()
+
+	queue, err := NewSimpleQueue("test-1", WithOwnLedis(ldis), WithContext(ctx))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := queue.Clear(); err != nil {
+		t.Fatal(err)
+	}
+
+	_len, err := queue.Len()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(_len)
+}
+
 func TestPop(t *testing.T) {
 	ldis, err := Open("./tmp")
 	if err != nil {

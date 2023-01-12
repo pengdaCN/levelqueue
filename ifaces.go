@@ -14,4 +14,5 @@ type SimpleQueue interface {
 	NewPopCh(ctx context.Context) <-chan []byte
 	NewPopChWithCapacity(ctx context.Context, _cap int) <-chan []byte
 	Len() (int64, error)
+	Clear() error
 }

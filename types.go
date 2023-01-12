@@ -157,6 +157,11 @@ func (s *simpleQueue) Len() (int64, error) {
 	return s.ldb.LLen([]byte(s.name))
 }
 
+func (s *simpleQueue) Clear() error {
+
+	return s.ldb.LTrim([]byte(s.name), 1, 0)
+}
+
 func (s *simpleQueue) _newPopCh(ctx context.Context, _cap int) <-chan []byte {
 	if _cap < 0 {
 		panic("cap must be greater than 0")
