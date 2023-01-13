@@ -127,6 +127,12 @@ func (s *simpleQueue) PopWithTimeout(timeout time.Duration) ([]byte, error) {
 	return bs, nil
 }
 
+func (s *simpleQueue) BPop() []byte {
+	ch := s.GlobalPopCh()
+
+	return <-ch
+}
+
 func (s *simpleQueue) GlobalPopCh() <-chan []byte {
 	s.mu.RLock()
 	if s.globalPopCh != nil {
