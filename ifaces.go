@@ -6,6 +6,7 @@ import (
 )
 
 type SimpleQueue interface {
+	// Name 返回队列的名字
 	Name() string
 	Push(data []byte) error
 	// Pop 消费一个元素，不阻塞，若没有元素则返回nil
