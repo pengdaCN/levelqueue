@@ -2,6 +2,7 @@ package levelqueue
 
 import (
 	"context"
+	"time"
 
 	"github.com/ledisdb/ledisdb/ledis"
 )
@@ -37,6 +38,14 @@ func WithDBIdx(idx int) CreateOption {
 func WithContext(ctx context.Context) CreateOption {
 	return func(opts *SimpleQueueCreateOption) error {
 		opts.ctx = ctx
+
+		return nil
+	}
+}
+
+func SetRetryInterval(interval time.Duration) CreateOption {
+	return func(opts *SimpleQueueCreateOption) error {
+		opts.RetryIntervalWhenPullFailed = interval
 
 		return nil
 	}

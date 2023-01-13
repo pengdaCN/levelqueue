@@ -12,19 +12,21 @@ import (
 var _ SimpleQueue = (*simpleQueue)(nil)
 
 type simpleQueue struct {
-	ldb         *ledis.DB
-	name        string
-	mu          sync.RWMutex
-	globalPopCh chan []byte
-	ctx         context.Context
+	ldb                         *ledis.DB
+	name                        string
+	mu                          sync.RWMutex
+	globalPopCh                 chan []byte
+	retryIntervalWhenPullFailed time.Duration
+	ctx                         context.Context
 }
 
 type SimpleQueueCreateOption struct {
-	LdisConfig *lediscfg.Config
-	Ldis       *ledis.Ledis
-	DbIdx      int
-	LDb        *ledis.DB
-	ctx        context.Context
+	LdisConfig                  *lediscfg.Config
+	Ldis                        *ledis.Ledis
+	DbIdx                       int
+	LDb                         *ledis.DB
+	ctx                         context.Context
+	RetryIntervalWhenPullFailed time.Duration
 }
 
 func (s *SimpleQueueCreateOption) setup() (err error) {
@@ -75,9 +77,10 @@ func NewSimpleQueue(name string, createOpts ...CreateOption) (SimpleQueue, error
 	}
 
 	queue := simpleQueue{
-		name: name,
-		ldb:  opts.LDb,
-		ctx:  opts.ctx,
+		name:                        name,
+		ldb:                         opts.LDb,
+		ctx:                         opts.ctx,
+		retryIntervalWhenPullFailed: opts.RetryIntervalWhenPullFailed,
 	}
 
 	return &queue, nil
@@ -186,7 +189,7 @@ func (s *simpleQueue) mainPull(ch chan []byte) {
 
 		bs, err := s.PopWithTimeout(time.Second)
 		if err != nil {
-			time.Sleep(time.Second * 3)
+			time.Sleep(s.retryIntervalWhenPullFailed)
 			continue
 		}
 
