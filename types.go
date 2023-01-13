@@ -2,10 +2,11 @@ package levelqueue
 
 import (
 	"context"
-	lediscfg "github.com/ledisdb/ledisdb/config"
-	"github.com/ledisdb/ledisdb/ledis"
 	"sync"
 	"time"
+
+	lediscfg "github.com/ledisdb/ledisdb/config"
+	"github.com/ledisdb/ledisdb/ledis"
 )
 
 var _ SimpleQueue = (*simpleQueue)(nil)
@@ -37,11 +38,11 @@ func (s *SimpleQueueCreateOption) setup() (err error) {
 		}
 	}
 
-	if s.Ldis == nil {
-		return NoConfigBaseDb
-	}
-
 	if s.LDb == nil {
+		if s.Ldis == nil {
+			return NoConfigBaseDb
+		}
+
 		s.LDb, err = s.Ldis.Select(s.DbIdx)
 		if err != nil {
 			return err
@@ -158,7 +159,6 @@ func (s *simpleQueue) Len() (int64, error) {
 }
 
 func (s *simpleQueue) Clear() error {
-
 	return s.ldb.LTrim([]byte(s.name), 1, 0)
 }
 

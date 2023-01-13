@@ -2,6 +2,7 @@ package levelqueue
 
 import (
 	"context"
+
 	"github.com/ledisdb/ledisdb/ledis"
 )
 

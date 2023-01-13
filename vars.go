@@ -1,5 +1,3 @@
 package levelqueue
 
-var (
-	dftCreateOption SimpleQueueCreateOption
-)
+var dftCreateOption SimpleQueueCreateOption

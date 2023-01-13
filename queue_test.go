@@ -3,8 +3,6 @@ package levelqueue
 import (
 	"context"
 	"encoding/binary"
-	lediscfg "github.com/ledisdb/ledisdb/config"
-	"github.com/ledisdb/ledisdb/server"
 	"log"
 	"math/rand"
 	"runtime"
@@ -13,6 +11,9 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+
+	lediscfg "github.com/ledisdb/ledisdb/config"
+	"github.com/ledisdb/ledisdb/server"
 )
 
 func TestClear(t *testing.T) {
@@ -228,7 +229,6 @@ func TestSimpleQueue(t *testing.T) {
 		}
 
 		log.Println("读耗时", time.Since(now))
-
 	}()
 
 	go func() {
@@ -319,7 +319,7 @@ func TestRun1(t *testing.T) {
 				bs = t2
 			}
 
-			//bs := val[1].([]interface{})[1].([]interface{})[1].([]byte)
+			// bs := val[1].([]interface{})[1].([]interface{})[1].([]byte)
 			seq := getSeq(bs)
 			if lastSeq+1 != seq {
 				log.Panicf("序列循序错误 本次: %d 上次: %d", seq, lastSeq)
@@ -334,7 +334,6 @@ func TestRun1(t *testing.T) {
 		}
 
 		log.Println("读耗时", time.Since(now))
-
 	}()
 
 	go func() {
