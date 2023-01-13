@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/pengdacn/levelqueue"
 	"log"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/pengdacn/levelqueue"
 )
 
 func main() {
