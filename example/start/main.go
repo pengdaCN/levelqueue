@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pengdacn/levelqueue/extutil"
+
 	"github.com/pengdacn/levelqueue"
 )
 
@@ -22,7 +24,7 @@ func main() {
 
 	queue, err := levelqueue.NewSimpleQueue(
 		"test-1",
-		levelqueue.WithOwnLedis(ldis),
+		levelqueue.WithOwnLedis(extutil.AutoCompact(ldis)),
 		levelqueue.WithContext(ctx),
 	)
 	if err != nil {
