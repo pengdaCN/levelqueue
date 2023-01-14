@@ -13,19 +13,27 @@ import (
 )
 
 func main() {
+	// 创建ldis
 	ldis, err := levelqueue.Open("./tmp")
 	if err != nil {
 		panic(err)
 	}
 
+	// 创建可取消的context，用于关闭queue
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	defer ldis.Close()
 
 	queue, err := levelqueue.NewSimpleQueue(
 		"test-1",
-		levelqueue.WithOwnLedis(extutil.AutoCompact(ldis)),
-		levelqueue.WithContext(ctx),
+		levelqueue.WithOwnLedis(
+			// 使用自动compact，只有leveldb 需要
+			extutil.AutoCompact(ldis),
+		),
+		levelqueue.WithContext(
+			// 传入退出context
+			ctx,
+		),
 	)
 	if err != nil {
 		panic(err)
