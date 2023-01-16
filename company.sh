@@ -15,6 +15,8 @@ for f in ./$PROJ_NAME/*; do
   cp -r "$f" company/$PROJ_NAME/
 done
 
+cp $PROJ_NAME/.gitignore company/$PROJ_NAME/
+
 cd company/$PROJ_NAME
 
 for f in $(find -name '*.go'); do
