@@ -235,14 +235,13 @@ func TestSimpleQueue(t *testing.T) {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 
-		for {
-			select {
-			case <-ticker.C:
-				var m runtime.MemStats
-				runtime.ReadMemStats(&m)
+		for range ticker.C {
 
-				log.Println(m.Sys)
-			}
+			var m runtime.MemStats
+			runtime.ReadMemStats(&m)
+
+			log.Println(m.Sys)
+
 		}
 	}()
 
@@ -340,14 +339,13 @@ func TestRun1(t *testing.T) {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 
-		for {
-			select {
-			case <-ticker.C:
-				var m runtime.MemStats
-				runtime.ReadMemStats(&m)
+		for range ticker.C {
 
-				log.Println(m.Sys)
-			}
+			var m runtime.MemStats
+			runtime.ReadMemStats(&m)
+
+			log.Println(m.Sys)
+
 		}
 	}()
 
@@ -464,7 +462,7 @@ func TestWrite(t *testing.T) {
 	}()
 
 	time.Sleep(time.Second * 5)
-	_ = <-ch
+	<-ch
 	close(ch)
 
 	time.Sleep(time.Second * 10)

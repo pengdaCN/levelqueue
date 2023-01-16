@@ -2,8 +2,9 @@ package extutil
 
 import (
 	"context"
-	"github.com/pengdacn/levelqueue"
 	"testing"
+
+	"github.com/pengdacn/levelqueue"
 )
 
 func TestAutoCompact(t *testing.T) {

@@ -1,0 +1,42 @@
+stages:
+  - lint
+  - build
+  - deploy
+variables:
+  PROJECT_NAME: $CI_PROJECT_NAME
+  BRANCH_NAME: $CI_COMMIT_REF_NAME
+  CI_PIPELINE_ID: $CI_PIPELINE_ID
+
+code-lint:
+  stage: lint
+  image: harbor.centos234.com/base/golint:1.0
+  only:
+    - pushes
+  tags:
+    - lint-build-runner
+  script:
+    - golangci-lint run -vvv --timeout=10m
+
+build_image:
+  stage: build
+  only:
+    refs:
+      - tags
+      - dev
+      - test
+  tags:
+    - lint-build-runner
+  script:
+    - docker build --build-arg PROJECT_NAME=$PROJECT_NAME -t harbor.centos234.com/$BRANCH_NAME/$PROJECT_NAME:$CI_PIPELINE_ID .
+    - docker push harbor.centos234.com/$BRANCH_NAME/$PROJECT_NAME:$CI_PIPELINE_ID
+
+deploy_k8s:
+  stage: deploy
+  only:
+    refs:
+      - dev
+      - test
+  tags:
+    - deploy-runner
+  script:
+    - kubectl set image deployment/$PROJECT_NAME $PROJECT_NAME=harbor.centos234.com/$BRANCH_NAME/$PROJECT_NAME:$CI_PIPELINE_ID -n $BRANCH_NAME
