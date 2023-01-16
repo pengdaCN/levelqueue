@@ -11,7 +11,7 @@ for f in company/$PROJ_NAME/*; do
   rm -rf "$f"
 done
 
-for f in company/$PROJ_NAME/*; do
+for f in ./$PROJ_NAME/*; do
   cp -r "$f" company/$PROJ_NAME/
 done
 
