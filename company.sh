@@ -19,7 +19,7 @@ cp $PROJ_NAME/.gitignore company/$PROJ_NAME/
 
 cd company/$PROJ_NAME
 
-for f in $(find -name '*.go'); do
+for f in $(find -name '*.go' -or -name 'go.mod'); do
   sed -i "s,${GITHUB_PATH},${COMPANY_PATH},g" $f
 done
 
