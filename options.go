@@ -7,6 +7,15 @@ import (
 	"github.com/ledisdb/ledisdb/ledis"
 )
 
+func WithOnceLifetime() CreateOption {
+	return func(opts *SimpleQueueCreateOption) error {
+		opts.MainPullLifetimeStrategy = MainPullLifetimeStrategyOnce
+		opts.PullStrategy = onceLifetimePullStrategy
+
+		return nil
+	}
+}
+
 func WithDir(dir string) CreateOption {
 	return func(opts *SimpleQueueCreateOption) error {
 		ldis, err := Open(dir)

@@ -11,6 +11,14 @@ import (
 
 var _ SimpleQueue = (*simpleQueue)(nil)
 
+type MainPullLifetimeStrategy int32
+type PullStrategy func(*simpleQueue) error
+
+const (
+	MainPullLifetimeStrategyGeneric MainPullLifetimeStrategy = iota + 1
+	MainPullLifetimeStrategyOnce
+)
+
 type simpleQueue struct {
 	ldb                         *ledis.DB
 	name                        string
@@ -18,6 +26,8 @@ type simpleQueue struct {
 	globalPopCh                 chan []byte
 	retryIntervalWhenPullFailed time.Duration
 	ctx                         context.Context
+	pullStrategy                func(*simpleQueue) error
+	mainPullLifetimeStrategy    MainPullLifetimeStrategy
 }
 
 type SimpleQueueCreateOption struct {
@@ -27,6 +37,8 @@ type SimpleQueueCreateOption struct {
 	LDb                         *ledis.DB
 	ctx                         context.Context
 	RetryIntervalWhenPullFailed time.Duration
+	MainPullLifetimeStrategy    MainPullLifetimeStrategy
+	PullStrategy                PullStrategy
 }
 
 func (s *SimpleQueueCreateOption) setup() (err error) {
@@ -55,6 +67,10 @@ func (s *SimpleQueueCreateOption) setup() (err error) {
 		s.ctx = context.Background()
 	}
 
+	if s.PullStrategy == nil {
+		s.PullStrategy = dftPullStrategy
+	}
+
 	return nil
 }
 
@@ -81,6 +97,8 @@ func NewSimpleQueue(name string, createOpts ...CreateOption) (SimpleQueue, error
 		ldb:                         opts.LDb,
 		ctx:                         opts.ctx,
 		retryIntervalWhenPullFailed: opts.RetryIntervalWhenPullFailed,
+		pullStrategy:                opts.PullStrategy,
+		mainPullLifetimeStrategy:    opts.MainPullLifetimeStrategy,
 	}
 
 	return &queue, nil
@@ -91,6 +109,10 @@ func (s *simpleQueue) Name() string {
 }
 
 func (s *simpleQueue) Push(data []byte) error {
+	if err := s.pullStrategy(s); err != nil {
+		return err
+	}
+
 	_, err := s.ldb.RPush([]byte(s.name), data)
 	return err
 }
@@ -189,6 +211,13 @@ func (s *simpleQueue) mainPull(ch chan []byte) {
 	for {
 		select {
 		case <-s.ctx.Done():
+			switch s.mainPullLifetimeStrategy {
+			case MainPullLifetimeStrategyGeneric:
+			case MainPullLifetimeStrategyOnce:
+				s.oncePull(ch)
+			default:
+			}
+
 			return
 		default:
 		}
@@ -205,8 +234,30 @@ func (s *simpleQueue) mainPull(ch chan []byte) {
 
 		select {
 		case <-s.ctx.Done():
+			switch s.mainPullLifetimeStrategy {
+			case MainPullLifetimeStrategyGeneric:
+			case MainPullLifetimeStrategyOnce:
+				s.oncePull(ch)
+			default:
+			}
+
 			return
 		default:
+		}
+
+		ch <- bs
+	}
+}
+
+func (s *simpleQueue) oncePull(ch chan<- []byte) {
+	for {
+		bs, err := s.Pop()
+		if err != nil {
+			return
+		}
+
+		if len(bs) == 0 {
+			return
 		}
 
 		ch <- bs

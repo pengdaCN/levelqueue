@@ -3,6 +3,7 @@ package levelqueue
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"math/rand"
 	"runtime"
@@ -466,4 +467,51 @@ func TestWrite(t *testing.T) {
 	close(ch)
 
 	time.Sleep(time.Second * 10)
+}
+
+func TestWithOnceLifetime(t *testing.T) {
+	ldis, err := Open("./tmp")
+	if err != nil {
+		panic(err)
+	}
+
+	// 创建可取消的context，用于关闭queue
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer ldis.Close()
+
+	queue, err := NewSimpleQueue(
+		"test-1",
+		WithOwnLedis(
+			ldis,
+		),
+		WithContext(
+			// 传入退出context
+			ctx,
+		),
+		WithOnceLifetime(),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < 1000; i++ {
+		if err := queue.Push([]byte(fmt.Sprintf(`aaa-xxx: %d`, i))); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// 关闭
+	cancel()
+
+	// 从ch 中读取数据
+	ch := queue.GlobalPopCh()
+	for bs := range ch {
+		t.Log(string(bs))
+	}
+
+	// 测试写入
+	if err := queue.Push([]byte(`fdsafsadf`)); err != nil {
+		t.Log(err.Error())
+	}
 }

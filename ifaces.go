@@ -27,3 +27,10 @@ type SimpleQueue interface {
 	// Clear 清空所有队列中所有的数据
 	Clear() error
 }
+
+// OnceQueue 基本属于SimpleQueue一样，但是，当Ctx 被cancel，或则手动调用了Close，
+// 则所有的写入操作都会被禁止，同时，在消息读取完毕后，chan会自动关闭
+type OnceQueue interface {
+	SimpleQueue
+	Close()
+}
