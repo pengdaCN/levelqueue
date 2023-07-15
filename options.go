@@ -7,6 +7,22 @@ import (
 	"github.com/ledisdb/ledisdb/ledis"
 )
 
+func SetCloseDelay(dur time.Duration) CreateOption {
+	return func(opts *SimpleQueueCreateOption) error {
+		opts.closeDelay = dur
+
+		return nil
+	}
+}
+
+func DisableCloseDelay() CreateOption {
+	return func(opts *SimpleQueueCreateOption) error {
+		opts.closeDelay = 0
+
+		return nil
+	}
+}
+
 func WithOnceLifetime() CreateOption {
 	return func(opts *SimpleQueueCreateOption) error {
 		opts.MainPullLifetimeStrategy = MainPullLifetimeStrategyOnce

@@ -39,6 +39,7 @@ type SimpleQueueCreateOption struct {
 	RetryIntervalWhenPullFailed time.Duration
 	MainPullLifetimeStrategy    MainPullLifetimeStrategy
 	PullStrategy                PullStrategy
+	closeDelay                  time.Duration
 }
 
 func (s *SimpleQueueCreateOption) setup() (err error) {
@@ -92,16 +93,34 @@ func NewSimpleQueue(name string, createOpts ...CreateOption) (SimpleQueue, error
 		return nil, err
 	}
 
+	var (
+		ctx    = opts.ctx
+		cancel context.CancelFunc
+	)
+
+	if opts.closeDelay != 0 {
+		ctx, cancel = context.WithCancel(context.Background())
+		delegateCtx(opts.ctx, cancel, opts.closeDelay)
+	}
+
 	queue := simpleQueue{
 		name:                        name,
 		ldb:                         opts.LDb,
-		ctx:                         opts.ctx,
+		ctx:                         ctx,
 		retryIntervalWhenPullFailed: opts.RetryIntervalWhenPullFailed,
 		pullStrategy:                opts.PullStrategy,
 		mainPullLifetimeStrategy:    opts.MainPullLifetimeStrategy,
 	}
 
 	return &queue, nil
+}
+
+func delegateCtx(listenCtx context.Context, cancel context.CancelFunc, delay time.Duration) {
+	<-listenCtx.Done()
+
+	time.Sleep(delay)
+
+	cancel()
 }
 
 func (s *simpleQueue) Name() string {
