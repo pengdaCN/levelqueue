@@ -100,7 +100,7 @@ func NewSimpleQueue(name string, createOpts ...CreateOption) (SimpleQueue, error
 
 	if opts.closeDelay != 0 {
 		ctx, cancel = context.WithCancel(context.Background())
-		delegateCtx(opts.ctx, cancel, opts.closeDelay)
+		go delegateCtx(opts.ctx, cancel, opts.closeDelay)
 	}
 
 	queue := simpleQueue{
