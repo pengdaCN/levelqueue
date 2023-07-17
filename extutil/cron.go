@@ -25,6 +25,13 @@ func AutoCompact(ldis *ledis.Ledis) *ledis.Ledis {
 func AdvAutoCompact(ldis *ledis.Ledis, crontab string, errHandle func(error)) *ledis.Ledis {
 	_startGlobalCron()
 
+	err := ldis.CompactStore()
+	if err != nil {
+		if errHandle != nil {
+			errHandle(err)
+		}
+	}
+
 	if _, err := _globalCron.AddFunc(crontab, func() {
 		if err := ldis.CompactStore(); err != nil {
 			if errHandle != nil {
