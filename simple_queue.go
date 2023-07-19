@@ -141,31 +141,33 @@ func (s *simpleQueue) Pop() ([]byte, error) {
 }
 
 func (s *simpleQueue) PopWithTimeout(timeout time.Duration) ([]byte, error) {
-	val, err := s.ldb.BLPop([][]byte{[]byte(s.name)}, timeout)
-	if err != nil {
-		return nil, err
-	}
+	ctx, cancel := context.WithTimeout(s.ctx, timeout)
+	defer cancel()
 
-	if len(val) == 0 {
-		return nil, nil
-	}
-
-	var bs []byte
-	{
-		t1, ok := val[1].([]any)
-		if !ok {
-			panic("bug !!! blpop 1")
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
 		}
 
-		t2, ok := t1[1].([]byte)
-		if !ok {
-			panic("bug !!! blpop 2")
+		bs, err := s.Pop()
+		if err != nil {
+			return nil, err
 		}
 
-		bs = t2
-	}
+		if len(bs) == 0 {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			default:
+			}
 
-	return bs, nil
+			time.Sleep(time.Millisecond * 10)
+		}
+
+		return bs, nil
+	}
 }
 
 func (s *simpleQueue) BPop() []byte {
