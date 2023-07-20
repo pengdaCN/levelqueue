@@ -141,33 +141,32 @@ func (s *simpleQueue) Pop() ([]byte, error) {
 }
 
 func (s *simpleQueue) PopWithTimeout(timeout time.Duration) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(s.ctx, timeout)
-	defer cancel()
+	const (
+		popInterval = time.Millisecond * 10
+	)
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
+	var (
+		times = int(timeout / popInterval)
+	)
+	if times < 0 {
+		times = 1
+	}
 
+	for i := 0; i < times; i++ {
 		bs, err := s.Pop()
 		if err != nil {
 			return nil, err
 		}
 
 		if len(bs) == 0 {
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			default:
-			}
-
 			time.Sleep(time.Millisecond * 10)
+			continue
 		}
 
 		return bs, nil
 	}
+
+	return nil, context.DeadlineExceeded
 }
 
 func (s *simpleQueue) BPop() []byte {
@@ -245,25 +244,18 @@ func (s *simpleQueue) mainPull(ch chan []byte) {
 
 		bs, err := s.PopWithTimeout(time.Second)
 		if err != nil {
+			select {
+			case <-s.ctx.Done():
+				continue
+			default:
+			}
+
 			time.Sleep(s.retryIntervalWhenPullFailed)
 			continue
 		}
 
 		if len(bs) == 0 {
 			continue
-		}
-
-		select {
-		case <-s.ctx.Done():
-			switch s.mainPullLifetimeStrategy {
-			case MainPullLifetimeStrategyGeneric:
-			case MainPullLifetimeStrategyOnce:
-				s.oncePull(ch)
-			default:
-			}
-
-			return
-		default:
 		}
 
 		ch <- bs
