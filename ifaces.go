@@ -17,6 +17,8 @@ type SimpleQueue interface {
 	BPop() []byte
 	// GlobalPopCh 返回全局的消费队列，唯一
 	GlobalPopCh() <-chan []byte
+	// BreakGlobalPopCh 终止上次打开的全局消费者
+	BreakGlobalPopCh()
 	// NewPopCh ctx 若cancel，则返回的channel 会被关闭，该channel的数据来自GlobalPopCh
 	NewPopCh(ctx context.Context) <-chan []byte
 	// NewPopChWithCapacity 与NewPopCh 相同，但是可以自定义channel的容量，若_cap 小于0则

@@ -469,6 +469,65 @@ func TestWrite(t *testing.T) {
 	time.Sleep(time.Second * 10)
 }
 
+func TestSimpleQueue_BreakGlobalPopCh(t *testing.T) {
+	ldis, err := Open("./tmp")
+	if err != nil {
+		panic(err)
+	}
+
+	// 创建可取消的context，用于关闭queue
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer ldis.Close()
+
+	queue, err := NewSimpleQueue(
+		"test-1",
+		WithOwnLedis(
+			ldis,
+		),
+		WithContext(
+			// 传入退出context
+			ctx,
+		),
+		WithOnceLifetime(),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < 1000; i++ {
+		if err := queue.Push([]byte(fmt.Sprintf(`aaa-xxx: %d`, i))); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	go func() {
+		time.Sleep(time.Second * 2)
+		queue.BreakGlobalPopCh()
+	}()
+
+	for bs := range queue.GlobalPopCh() {
+		t.Log(string(bs))
+		time.Sleep(time.Second / 10)
+	}
+
+	t.Log("stop 1")
+
+	go func() {
+		time.Sleep(time.Second * 2)
+		queue.BreakGlobalPopCh()
+	}()
+
+	for bs := range queue.GlobalPopCh() {
+		t.Log(string(bs))
+		time.Sleep(time.Second / 10)
+	}
+
+	t.Log("stop 2")
+
+	t.Log("Ok")
+}
+
 func TestWithOnceLifetime(t *testing.T) {
 	ldis, err := Open("./tmp")
 	if err != nil {

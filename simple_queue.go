@@ -26,6 +26,8 @@ type simpleQueue struct {
 	globalPopCh                 chan []byte
 	retryIntervalWhenPullFailed time.Duration
 	ctx                         context.Context
+	globalChCtx                 context.Context
+	globalChCancel              context.CancelFunc
 	pullStrategy                func(*simpleQueue) error
 	mainPullLifetimeStrategy    MainPullLifetimeStrategy
 }
@@ -123,6 +125,19 @@ func delegateCtx(listenCtx context.Context, cancel context.CancelFunc, delay tim
 	cancel()
 }
 
+func (s *simpleQueue) BreakGlobalPopCh() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.globalChCancel != nil {
+		s.globalChCancel()
+	}
+
+	s.globalPopCh = nil
+	s.globalChCtx = nil
+	s.globalChCancel = nil
+}
+
 func (s *simpleQueue) Name() string {
 	return s.name
 }
@@ -190,6 +205,10 @@ func (s *simpleQueue) GlobalPopCh() <-chan []byte {
 		return s.globalPopCh
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	s.globalChCtx = ctx
+	s.globalChCancel = cancel
+
 	// start main customer
 	ch := make(chan []byte)
 	go s.mainPull(ch)
@@ -228,9 +247,11 @@ func (s *simpleQueue) _newPopCh(ctx context.Context, _cap int) <-chan []byte {
 func (s *simpleQueue) mainPull(ch chan []byte) {
 	defer close(ch)
 
+	gCtx := s.globalChCtx
 	for {
 		select {
 		case <-s.ctx.Done():
+			s.globalChCancel()
 			switch s.mainPullLifetimeStrategy {
 			case MainPullLifetimeStrategyGeneric:
 			case MainPullLifetimeStrategyOnce:
@@ -238,6 +259,8 @@ func (s *simpleQueue) mainPull(ch chan []byte) {
 			default:
 			}
 
+			return
+		case <-gCtx.Done():
 			return
 		default:
 		}
