@@ -1,0 +1,45 @@
+设计 simple topic
+	topic
+		customer
+			customer_cursor + 记录本消费者消费到队列的位置
+	topic 可以直接写入消息，不能取，取消息只能使用customer
+		+ 所有customer
+		topic 状态元数据
+		topic_metadata
+			created_at
+			is_open
+			flags int64
+
+	原则
+		所有消息都会被过期删除，即使没有读取
+		所有的topic都默认都是一次性的，即，topic主动调用了关闭，就不能够在写入消息
+	
+	topic_offest
+		默认为0
+		每次删除过期消息时改变该offest，递增，+ 删除的消息数量
+	
+	消息写入
+		通过topic写入，直接写入唯一的消息list中
+	消息读取
+		获取topic的offest
+		获取当前的customer_offest
+		计算出通道中的offest，即next_offest
+		读取，若有，则更新customer_offest
+		若没有，则重试
+	
+	topic 设计
+		topic_offest
+		topic_metadata
+			is_open
+			flags int64
+		
+		ref customer
+		
+		支持 自动删除
+			当topic的所有customer 删除时，topic将自动删除自己的所有数据
+		
+	customer 设计
+		customer_offest
+		ref topic
+		
+		支持 删除

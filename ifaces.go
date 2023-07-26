@@ -36,3 +36,21 @@ type OnceQueue interface {
 	SimpleQueue
 	Close()
 }
+
+type SimpleTopic interface {
+	Name() string
+	Push(data []byte) error
+	OpenCustomer(name string) (SimpleTopicCustomer, error)
+	UniqCustomer() (SimpleTopicCustomer, error)
+	Close() error
+}
+
+type SimpleTopicCustomer interface {
+	Name() string
+	// Pop 消费一个元素，不阻塞，若没有元素则返回nil
+	Pop() ([]byte, error)
+	// PopWithTimeout 消费一个元素，若没有元素则最大等待timeout的时间，若超时，则返回nil
+	PopWithTimeout(timeout time.Duration) ([]byte, error)
+	PopCh() <-chan []byte
+	Cleanup() error
+}
